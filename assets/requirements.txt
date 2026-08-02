@@ -1,0 +1,12 @@
+flet
+flet_charts
+flet-charts
+firebase-admin
+firebase_admin
+certifi
+urllib3
+idna
+charset-normalizer
+charset_normalizer
+requests
+

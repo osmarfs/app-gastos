@@ -1,0 +1,13 @@
+# Bloquear credenciais e chaves secretas (CRÍTICO)
+credenciais.json
+assets/credenciais.json
+*.json
+*.env
+
+# Bloquear pastas de compilação e cache
+build/
+__pycache__/
+*.pyc
+
+# Bloquear arquivos temporários do sistema
+.vscode/
