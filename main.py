@@ -56,7 +56,7 @@ def criar_barra_categoria(nome_categoria, valor_gasto, total_gasto, cor_flet, su
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ft.ProgressBar(value=pct, color=cor_flet, bgcolor=ft.Colors.GREY_200, height=8, border_radius=10)
         ], spacing=2),
-        on_click=alternar_detalhes, ink=True, padding=ft.padding.symmetric(vertical=5)
+        on_click=alternar_detalhes, ink=True, padding=ft.padding.only(top=5, bottom=5)
     )
     return ft.Column([barra_principal, coluna_detalhes], spacing=0)
 # 👆 FIM DA NOVA FUNÇÃO 👆
@@ -390,7 +390,7 @@ async def main(page: ft.Page):
                 ft.Text(f"Token do Clã: {usuario_token}", weight="bold", color=ft.Colors.ORANGE_700, selectable=True),
             ], tight=True),
             bgcolor=ft.Colors.ORANGE_50,
-            padding=ft.padding.symmetric(horizontal=10, vertical=5),
+            padding=ft.padding.only(left=10, right=10, top=5, bottom=5),
             border_radius=20,
             tooltip="Segure para copiar e convidar a família!"
         )
@@ -1973,7 +1973,7 @@ async def main(page: ft.Page):
                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                     on_click=alternar_formulario_despesa,
                     ink=True, # Cria aquele efeito de "onda" ao clicar
-                    padding=ft.padding.symmetric(vertical=5)
+                    padding=ft.padding.only(top=5, bottom=5)
                 ),
                 
                 # --- OS CAMPOS ESCONDIDOS ---
@@ -2017,7 +2017,7 @@ async def main(page: ft.Page):
                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                     on_click=alternar_lista_lancamentos,
                     ink=True,
-                    padding=ft.padding.symmetric(vertical=5)
+                    padding=ft.padding.only(top=5, bottom=5)
                 ),
                 
                 # --- A LISTA QUE APARECE E SOME ---
