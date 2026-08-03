@@ -10,7 +10,6 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 
-
 # --- LIGAÇÃO À NUVEM (FIREBASE) ---
 if not firebase_admin._apps:
     cred = credentials.Certificate("credenciais.json")
@@ -71,8 +70,7 @@ async def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.SYSTEM
     page.padding = 20
     
-    
-        # Código limpo, moderno e compatível com Flet 0.82+
+    # Código limpo, moderno e compatível com Flet 0.82+
     barra_carregamento = ft.ProgressBar(width=200, color=ft.Colors.BLUE_400, bgcolor=ft.Colors.GREY_200)
     texto_carregando = ft.Text("Sincronizando os dados da família...", size=14, color=ft.Colors.GREY_600)
 
@@ -83,16 +81,12 @@ async def main(page: ft.Page):
         expand=True
     )
 
-
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     
     page.add(tela_loading)
     page.update()
 
-
-    
-            
     await asyncio.sleep(0.2) # Pausa final para a transição ficar suave
     page.scroll = ft.ScrollMode.AUTO
     await asyncio.sleep(0.1)
@@ -101,7 +95,6 @@ async def main(page: ft.Page):
         page.window.icon = "icon.png"
     except:
         page.window_icon = "icon.png"
-    
 
     # =======================================================
     # 🔐 2. LENDO A MEMÓRIA DO CELULAR 
@@ -110,6 +103,7 @@ async def main(page: ft.Page):
     usuario_nasc = await page.shared_preferences.get("usuario_nasc")
     usuario_5_anos = await page.shared_preferences.get("usuario_5_anos")
     usuario_token = await page.shared_preferences.get("usuario_token")
+    
     # =======================================================
     # 📝 3. TELA DE LOGIN (SISTEMA DE CLÃS E FAMÍLIAS)
     # =======================================================
@@ -159,11 +153,9 @@ async def main(page: ft.Page):
     campo_senha_lider = ft.TextField(label="Crie uma Senha (Só para o Líder)", width=300, password=True, can_reveal_password=True, text_align=ft.TextAlign.CENTER, prefix_icon=ft.Icons.LOCK)
 
     # Campos do MEMBRO (Entrar com Token)
-    campo_token_acesso = ft.TextField(label="Token da Família (Ex: CLAN-12345)", width=300, text_align=ft.TextAlign.CENTER, capitalization=ft.TextCapitalization.CHARACTERS, prefix_icon=ft.Icons.VPN_KEY
-    )
+    campo_token_acesso = ft.TextField(label="Token da Família (Ex: CLAN-12345)", width=300, text_align=ft.TextAlign.CENTER, capitalization=ft.TextCapitalization.CHARACTERS, prefix_icon=ft.Icons.VPN_KEY)
 
     # --- A LÓGICA DE SALVAR E ENTRAR ---
-    # --- A LÓGICA DE SALVAR E ENTRAR (AGORA À PROVA DE BALAS!) ---
     async def processar_login(tipo_login):
         nome = campo_nome.value.strip().title() if campo_nome.value else ""
         nasc = campo_nascimento.value.strip() if campo_nascimento.value else ""
@@ -353,12 +345,29 @@ async def main(page: ft.Page):
     # ========================================================
     # APLICATIVO PRINCIPAL
     # ========================================================
-    # Adicione o token_familia aqui! 👇
     def montar_interface_principal(nome_usuario, nascimento, tem_5_anos, usuario_token):
         
-        async def sair_do_app(e):
-            # ... resto do código continua igual ...
+        # --- SISTEMA DE NOTIFICAÇÃO FIXA ---
+        def notificar_fixo(titulo, mensagem, cor=ft.Colors.BLUE_800):
+            def fechar_banner(e):
+                page.banner.open = False
+                page.update()
 
+            page.banner = ft.Banner(
+                bgcolor=cor,
+                leading=ft.Icon(ft.Icons.NOTIFICATIONS_ACTIVE, color="white", size=32),
+                content=ft.Column([
+                    ft.Text(titulo, weight="bold", size=16, color="white"),
+                    ft.Text(mensagem, color="white", size=14)
+                ], tight=True, spacing=2),
+                actions=[
+                    ft.TextButton("FECHAR", style=ft.ButtonStyle(color="white"), on_click=fechar_banner)
+                ]
+            )
+            page.banner.open = True
+            page.update()
+        
+        async def sair_do_app(e):
             await page.shared_preferences.remove("usuario_nome")
             await page.shared_preferences.remove("usuario_nasc")
             await page.shared_preferences.remove("usuario_5_anos")
@@ -383,7 +392,6 @@ async def main(page: ft.Page):
         mensagem_pis = calcular_pis()
         texto_boas_vindas = ft.Text(f"Olá, {nome_usuario}!", size=24, weight="bold", color="blue")
         
-        # 👇 O CRACHÁ DO CLÃ (Com selectable=True para poder copiar!) 👇
         badge_token = ft.Container(
             content=ft.Row([
                 ft.Icon(ft.Icons.KEY, color=ft.Colors.ORANGE_700, size=16),
@@ -395,12 +403,10 @@ async def main(page: ft.Page):
             tooltip="Segure para copiar e convidar a família!"
         )
 
-        # 👇 1. DESCOBRE SE QUEM LOGOU É O PATRIARCA 👇
         doc_cla = db.collection("familias").document(usuario_token).get()
         dados_cla = doc_cla.to_dict() if doc_cla.exists else {}
         eh_lider = dados_cla.get("patriarca") == nome_usuario
 
-        # 👇 2. O PAINEL DE CONTROLE SECRETO 👇
         def abrir_painel_lider(e):
             doc_atual = db.collection("familias").document(usuario_token).get()
             membros_atuais = doc_atual.to_dict().get("membros", {})
@@ -408,7 +414,7 @@ async def main(page: ft.Page):
             lista_ui = ft.Column(spacing=10)
             
             for m_nome, m_status in membros_atuais.items():
-                if m_nome == nome_usuario: continue # O líder não pode se bloquear kkkk
+                if m_nome == nome_usuario: continue 
                 
                 esta_bloqueado = m_status == "bloqueado"
                 cor_status = ft.Colors.RED if esta_bloqueado else ft.Colors.GREEN
@@ -416,7 +422,6 @@ async def main(page: ft.Page):
                 icone_btn = ft.Icons.LOCK_OPEN if esta_bloqueado else ft.Icons.BLOCK
                 cor_btn = ft.Colors.GREEN if esta_bloqueado else ft.Colors.RED
                 
-                # A Mágica do Banimento (Troca o status na nuvem)
                 def alterar_status(e, nome_alvo=m_nome, status_atual=m_status):
                     novo_status = "ativo" if status_atual == "bloqueado" else "bloqueado"
                     db.collection("familias").document(usuario_token).set({
@@ -448,25 +453,19 @@ async def main(page: ft.Page):
             
         page.overlay.append(popup_lider)
 
-        # O Botão que só aparece se for o Líder!
         botao_admin = ft.IconButton(icon=ft.Icons.ADMIN_PANEL_SETTINGS, icon_color="blue", tooltip="Gerenciar Clã", on_click=abrir_painel_lider, visible=eh_lider)
         
-        # Agrupamos as boas-vindas e o crachá juntos
-        # Agrupamos as boas-vindas, o crachá e o Botão do Líder!
         cabecalho_usuario = ft.Column([
             texto_boas_vindas, 
-            ft.Row([badge_token, botao_admin], spacing=5) # <--- Botão entrou aqui!
+            ft.Row([badge_token, botao_admin], spacing=5)
         ], spacing=2)
         texto_renda_total = ft.Text("R$ 0,00", size=24, weight=ft.FontWeight.BOLD, color=ft.Colors.GREEN)
         coluna_detalhes_renda = ft.Column(spacing=2) 
         texto_total_a_pagar = ft.Text("R$ 0,00", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.ORANGE_700)
         texto_saldo_real = ft.Text("R$ 0,00", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE)
         texto_alerta_financeiro = ft.Text("", color=ft.Colors.RED_700, weight=ft.FontWeight.BOLD)
-        # --- 🧾 NOVO PAINEL DE RESUMO FINANCEIRO PREMIUM ---
-        # Definimos os sub-componentes primeiro para facilitar a montagem
         texto_sobra_mes_anterior = ft.Text("", size=11, color=ft.Colors.GREY_600)
         
-        # Sub-cartão de Renda Familiar
         ui_renda_familia = criar_cartao_premium(
             ft.Column([
                 ft.Row([
@@ -475,7 +474,7 @@ async def main(page: ft.Page):
                     ft.IconButton(icon=ft.icons.Icons.EXIT_TO_APP, icon_color="red", on_click=sair_do_app, scale=1.1)
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 texto_renda_total,
-                coluna_detalhes_renda, # Isso já tem a lógica de líquido, continua igual
+                coluna_detalhes_renda,
             ], spacing=8)
         )
         cartao_total_a_pagar = criar_cartao_premium(
@@ -484,7 +483,7 @@ async def main(page: ft.Page):
                     ft.Icon(ft.icons.Icons.CHECKLIST, color=ft.Colors.ORANGE_800, size=26),
                     ft.Text("Total a Pagar", weight="bold", size=13, expand=True),
                 ], spacing=4, alignment=ft.MainAxisAlignment.START, height=50),
-                texto_total_a_pagar # Valor calculado anteriormente
+                texto_total_a_pagar 
             ], spacing=2, horizontal_alignment=ft.CrossAxisAlignment.START),
             elevation=2 
         )
@@ -495,10 +494,9 @@ async def main(page: ft.Page):
                     ft.Text("Livre após contas", weight="bold", size=15),
                 ], spacing=0, margin=8, alignment=ft.MainAxisAlignment.START),
                 
-                # 👇 Agrupamos o valor e a sobra aqui 👇
                 ft.Column([
                     texto_saldo_real,
-                    texto_sobra_mes_anterior # O texto pequeno entra aqui!
+                    texto_sobra_mes_anterior
                 ], spacing=0)
                 
             ], spacing=2, horizontal_alignment=ft.CrossAxisAlignment.START),
@@ -515,11 +513,6 @@ async def main(page: ft.Page):
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=10) 
         ], spacing=0, margin=8)
 
-        # Cartões de "Total a Pagar" e "Saldo Real Disponível" lado a lado (Row)
-        
-
-
-
         linha_cartao_financeiros = ft.Row([
             ft.Container(content=cartao_total_a_pagar, expand=True, bgcolor=ft.Colors.GREY_100),
             ft.Container(content=cartao_saldo_real, expand=True, bgcolor=ft.Colors.GREY_100)
@@ -532,22 +525,20 @@ async def main(page: ft.Page):
             bgcolor=ft.Colors.GREY_100
         )
 
-        # Montagem do Painel de Resumo Final (Agora guarda só a Renda)
         painel_resumo = ft.Column([
             ft.Text("Resumo Financeiro", weight="bold", size=22),
             ui_renda_familia 
         ], spacing=10)
 
-        # --- ⚠️ ALERTA FINANCEIRO PREMIUM (Banner Rosa Clarinho) ---
         cartao_alerta_financeiro = ft.Container(
             border_radius=ft.border_radius.all(12),
             padding=ft.padding.only(left=15, right=15, top=8, bottom=8),
-            bgcolor=ft.Colors.RED_50, # Fundo rosa claro igual da referência
+            bgcolor=ft.Colors.RED_50,
             content=ft.Row([
                 ft.Icon(ft.Icons.WARNING_AMBER_OUTLINED, color=ft.Colors.RED_900), 
-                texto_alerta_financeiro # Texto redado anteriormente
+                texto_alerta_financeiro 
             ], spacing=10),
-            visible=False # Nasce invisível
+            visible=False 
         )
 
         def alternar_tema(e):
@@ -560,9 +551,6 @@ async def main(page: ft.Page):
             on_click=alternar_tema, tooltip="Mudar Tema"
         )
 
-        # ==========================================================
-        # 🟢 PASSO 2: O CONSULTOR DE PIS 
-        # ==========================================================
         cartao_pis = criar_cartao_premium(
             ft.Column([
                 ft.Row([
@@ -573,13 +561,9 @@ async def main(page: ft.Page):
             ], spacing=10)
         )
 
-        # ==========================================================
-        # 🟢 PASSO 4: PAINEL DE RESUMO FINAL E ALERTA
-        # ==========================================================
         painel_resumo = ft.Column([
             ft.Text("Resumo Financeiro", weight="bold", size=22),
             ui_renda_familia 
-            # Arrancamos o ft.Divider e o ft.Row que estavam aqui criando os clones!
         ], spacing=10)
 
         cartao_alerta_financeiro = ft.Container(
@@ -607,20 +591,16 @@ async def main(page: ft.Page):
             e.control.value = texto_formatado
             e.control.update()
 
-       # --- CAMPOS PREMIUM (Com texto sempre preto para não sumir no Dark Mode!) ---
         input_renda = ft.TextField(label="Atualizar meu Salário (R$)", expand=True, keyboard_type=ft.KeyboardType.NUMBER, border_radius=10, bgcolor=ft.Colors.WHITE, border_color="#D1D9E6", color="black")
-        
         descricao_input = ft.TextField(label="Insira uma descrição", border_radius=10, bgcolor=ft.Colors.WHITE, border_color="#D1D9E6", prefix_icon=ft.Icons.EDIT_OUTLINED, color="black")
         valor_input = ft.TextField(label="Valor Gasto (R$)", keyboard_type=ft.KeyboardType.NUMBER, border_radius=10, bgcolor=ft.Colors.WHITE, border_color="#D1D9E6", prefix_icon=ft.Icons.ATTACH_MONEY, color="black")
         
-        # Dropdowns com cor travada
         categoria_dropdown = ft.Dropdown(
             label="Categoria", border_radius=10, bgcolor=ft.Colors.WHITE, border_color="#D1D9E6", expand=True, color="black",
             options=[ft.dropdown.Option(c) for c in cores_categorias.keys()] + [ft.dropdown.Option("Cartão de Crédito")]
         )
         linha_cat = ft.Row([ft.Icon(ft.Icons.LOCAL_OFFER_OUTLINED, color=ft.Colors.GREY_500), categoria_dropdown])
         
-        # 1. A FUNÇÃO NASCE PRIMEIRO
         def verificar_forma_pagamento(e):
             if e.control.value == "Cartão de Crédito":
                 linha_cartao.visible = True
@@ -629,7 +609,6 @@ async def main(page: ft.Page):
                 dropdown_qual_cartao.value = "Não se aplica" 
             e.control.page.update()
 
-        # 2. O DROPDOWN DO CARTÃO NASCE INVISÍVEL
         dropdown_qual_cartao = ft.Dropdown(
             label="Qual Cartão?", value="Não se aplica", border_radius=10, 
             bgcolor="white", border_color="#D1D9E6", expand=True, color="black",
@@ -645,16 +624,14 @@ async def main(page: ft.Page):
             visible=False 
         )
 
-        # 3. O DROPDOWN PRINCIPAL (Com o evento certo para a v0.82+)
         forma_pagamento_dropdown = ft.Dropdown(
             label="Forma de Pagamento", border_radius=10, 
             bgcolor="white", border_color="#D1D9E6", expand=True, color="black",
             options=[ft.dropdown.Option("Pix"), ft.dropdown.Option("Cartão de Crédito"), ft.dropdown.Option("Dinheiro")],
-            on_select=verificar_forma_pagamento # <--- A MÁGICA DA VERSÃO 0.82 AQUI!
+            on_select=verificar_forma_pagamento
         )
         linha_forma = ft.Row([ft.Icon(ft.Icons.PAYMENT_OUTLINED, color="grey"), forma_pagamento_dropdown])
 
-        # 2. O Dropdown do Cartão 
         dropdown_qual_cartao = ft.Dropdown(
             label="Qual Cartão?", value="Não se aplica", border_radius=10, bgcolor=ft.Colors.WHITE, border_color="#D1D9E6", expand=True, color="black",
             options=[
@@ -664,27 +641,19 @@ async def main(page: ft.Page):
             ]
         )
         
-        # 3. A linha que guarda o cartão NASCE INVISÍVEL!
         linha_cartao = ft.Row(
             [ft.Icon(ft.Icons.CREDIT_CARD, color=ft.Colors.GREY_500), dropdown_qual_cartao],
-            visible=False # <--- O SEGREDO DO VISUAL LIMPO!
+            visible=False
         )
         
-        # Parcelas e Vencimentos com cor travada
         input_parcelas = ft.TextField(label="Qtd Parcelas", value="1", expand=True, keyboard_type=ft.KeyboardType.NUMBER, border_radius=10, bgcolor=ft.Colors.WHITE, border_color="#D1D9E6", prefix_icon=ft.Icons.LAYERS, color="black")
         input_vencimento = ft.TextField(label="Vencimento", expand=True, prefix_icon=ft.Icons.CALENDAR_MONTH_ROUNDED, keyboard_type=ft.KeyboardType.NUMBER, on_change=formatar_data_vencimento, max_length=10, counter="", border_radius=10, bgcolor=ft.Colors.WHITE, border_color="#D1D9E6", color="black")
         linha_opcionais = ft.Row([input_parcelas, input_vencimento], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.CENTER)
         
-
-        # 👇 AS DUAS CHAVINHAS (Agora organizadas uma embaixo da outra!) 👇
-        
         checkbox_mes_passado = ft.Switch(label="⏳ Mês Passado?", value=False, active_color=ft.Colors.TEAL_400)
         checkbox_recorrente = ft.Switch(label="🔄 Conta Fixa?", value=False, active_color=ft.Colors.BLUE_400)
-        
-        # Colocamos elas lado a lado (como o texto tá curto, agora cabe e fica lindo!)
         linha_botoes = ft.Row([checkbox_mes_passado, checkbox_recorrente], alignment=ft.MainAxisAlignment.SPACE_AROUND)
         
-        # O seu Container chique envolvendo as chaves!
         linha_switch = ft.Container(
             content=linha_botoes,
             padding=10,
@@ -719,18 +688,15 @@ async def main(page: ft.Page):
         def lancar_lista_como_gasto(doc_id, lista_dados):
             hoje = datetime.date.today()
     
-            # 🔥 A NOSSA TRAVA DE INTELIGÊNCIA ENTRA AQUI 🔥
             if forma_pagamento_dropdown.value == "Cartão de Crédito" or dropdown_banco.value == "Banco Inter": 
                 status_correto = "pendente"
             else:
                 status_correto = "pago" 
 
-            # Quando for montar os dados para o Firebase, também use o .value:
             dados_novo_gasto = {
-                # ...
                 "forma_pagamento": forma_pagamento_dropdown.value if forma_pagamento_dropdown.value else "Não informado",
                 "status": status_correto,
-    }
+            }
             db.collection("gastos").add({
                 "descricao": "Compra de Mercado (Lista Salva)", "valor": lista_dados.get("total_previsto", 0),
                 "categoria": "Alimentação / Supermercado", "forma_pagamento": "Não informado",
@@ -743,14 +709,10 @@ async def main(page: ft.Page):
             carregar_dados()
             page.update()
 
-        # ====================================================================
-        # 🎨 TELA DE HISTÓRICO VISUAL (COM FILTRO DE CARTÕES!) 🎨
-        # ====================================================================
         def ver_detalhes_mes(mes_selecionado):
             lista_historico_meses.controls.clear()
             id_mes_busca = mes_selecionado.replace("/", "_")
             
-            # 1. Puxa a Renda daquele mês específico
             doc_renda_velha = db.collection("resumo").document(id_mes_busca).get()
             renda_epoca = doc_renda_velha.to_dict().get("renda", 0.0) if doc_renda_velha.exists else 0.0
             
@@ -761,38 +723,31 @@ async def main(page: ft.Page):
                     renda_atual_temp += doc_r.to_dict().get("valor", 0.0)
                 renda_epoca = renda_atual_temp
 
-            # 🧠 INTELIGÊNCIA DOS CARTÕES: Preparando os dados
             totais_cartoes = {}
             dados_do_mes = []
 
-            # Varre o banco de dados UMA VEZ e guarda na memória para o filtro ficar rápido
             docs = db.collection("gastos").where("mes_ano", "==", mes_selecionado).stream()
             for doc in docs:
                 d = doc.to_dict()
                 d['id'] = doc.id
                 dados_do_mes.append(d)
                 
-                # Soma os valores para criar o "Total da Fatura" de cada cartão
                 cartao = d.get('cartao_usado', '')
                 if cartao and cartao != "Não se aplica":
                     v = float(str(d.get('valor', 0)).replace(',', '.'))
                     totais_cartoes[cartao] = totais_cartoes.get(cartao, 0.0) + v
 
-            # O container onde as compras vão aparecer
             coluna_itens_filtrados = ft.Column()
 
-            # 🎯 FUNÇÃO DE FILTRAGEM: Desenha a lista dependendo do que você escolheu
             def renderizar_lista(filtro="Todos"):
                 coluna_itens_filtrados.controls.clear()
                 
                 for d in dados_do_mes:
                     cartao_usado = d.get('cartao_usado', '')
                     
-                    # Se o filtro não for "Todos" e o cartão não bater, pula esse gasto!
                     if filtro != "Todos" and cartao_usado != filtro:
                         continue
                         
-                    # --- MONTAGEM DO CARTÃO (Já com a correção de quebrar linha!) ---
                     v = float(str(d.get('valor', 0)).replace(',', '.'))
                     status = d.get('status', 'pendente')
                     data_reg = d.get('data', 'Sem data')
@@ -822,7 +777,7 @@ async def main(page: ft.Page):
 
                     coluna_info = ft.Column([
                         ft.Row([
-                            ft.Text(f"[{data_reg}] {desc}", weight=ft.FontWeight.BOLD, size=15, expand=True), # Expand=True salva a tela!
+                            ft.Text(f"[{data_reg}] {desc}", weight=ft.FontWeight.BOLD, size=15, expand=True), 
                             status_ui
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, vertical_alignment=ft.CrossAxisAlignment.START),
                         
@@ -832,7 +787,6 @@ async def main(page: ft.Page):
                     ], spacing=3)
 
                     if "itens_detalhados" in d and len(d["itens_detalhados"]) > 0:
-                        # Adicionamos o (R$ ...) puxando o item.get('preco') que já estava salvo na nuvem!
                         str_itens = " • " + "\n • ".join([f"{item['qtd']}x {item['nome']} (R$ {item.get('preco', 0):.2f})" for item in d["itens_detalhados"]])
                         coluna_info.controls.append(ft.Text(f"Itens do Mercado:\n{str_itens}", size=11, color=ft.Colors.GREY_700))
 
@@ -840,11 +794,9 @@ async def main(page: ft.Page):
                 
                 page.update()
 
-            # --- CABEÇALHO DA TELA DE MESES ---
             resumo_faturas_ui = ft.Column(spacing=2)
             opcoes_filtro = [ft.dropdown.Option("Todos")]
             
-            # Se achou algum cartão usado no mês, cria o Mini-Dashboard!
             if totais_cartoes:
                 resumo_faturas_ui.controls.append(ft.Text("📊 Faturas de Cartão (Neste Mês):", weight="bold", size=14))
                 for c_nome, c_total in totais_cartoes.items():
@@ -858,22 +810,20 @@ async def main(page: ft.Page):
                 options=opcoes_filtro,
                 value="Todos",
                 border_radius=10,
-                on_text_change=lambda e: renderizar_lista(e.control.value) # Chama o filtro ao mudar!
+                on_text_change=lambda e: renderizar_lista(e.control.value) 
             )
 
             cabecalho_mes = ft.Column([
                 ft.Row([ft.IconButton(icon=ft.Icons.ARROW_BACK, on_click=lambda _: carregar_dados()), ft.Text(f"Lançamentos de {mes_selecionado}", size=20, weight="bold")]),
                 ft.Text(f"Renda base na época: R$ {renda_epoca:.2f}", color=ft.Colors.BLUE_400, weight="bold"), 
                 ft.Divider(),
-                criar_cartao_premium(resumo_faturas_ui, elevation=1), # Caixinha Premium pro Resumo
+                criar_cartao_premium(resumo_faturas_ui, elevation=1), 
                 dropdown_filtro,
                 ft.Divider(),
-                coluna_itens_filtrados # A lista renderizada entra aqui no final!
+                coluna_itens_filtrados 
             ])
 
             lista_historico_meses.controls.append(cabecalho_mes)
-            
-            # Chama a função para desenhar a lista completa ("Todos") na primeira vez que abre a tela
             renderizar_lista("Todos")
 
         def calcular_parcelas_pagas(mes_ano_inicio):
@@ -891,7 +841,7 @@ async def main(page: ft.Page):
                 ft.dropdown.Option("Caixa Econômica"), 
                 ft.dropdown.Option("Banco do Brasil"), 
                 ft.dropdown.Option("Itaú"), 
-                ft.dropdown.Option("Santander"),     # <--- AQUI TAMBÉM
+                ft.dropdown.Option("Santander"),
                 ft.dropdown.Option("Bradesco"),
                 ft.dropdown.Option("Outro")
             ]
@@ -913,11 +863,9 @@ async def main(page: ft.Page):
             from datetime import datetime
             hoje_str = datetime.now().strftime("%d/%m/%Y")
             
-            # 1. Puxa os dados da conta antes de pagar ela
             doc_ref = db.collection("gastos").document(doc_id)
             doc_atual = doc_ref.get().to_dict()
             
-            # 2. Atualiza a conta ATUAL para paga!
             doc_ref.update({
                 "status": "pago",
                 "banco_pagamento": dropdown_banco.value,
@@ -925,9 +873,7 @@ async def main(page: ft.Page):
                 "data_pagamento": hoje_str
             })
             
-            # 🔥 3. A LÓGICA DO OSMAR: CLONAGEM AUTOMÁTICA 🔥
             if doc_atual.get("recorrente") == True:
-                # Calcula o mês que vem
                 m_atual, a_atual = map(int, doc_atual["mes_ano"].split('/'))
                 m_prox = m_atual + 1
                 a_prox = a_atual
@@ -936,7 +882,6 @@ async def main(page: ft.Page):
                     a_prox += 1
                 mes_ano_futuro = f"{m_prox:02d}/{a_prox}"
                 
-                # Calcula a data de vencimento do mês que vem (se tiver)
                 venc_futuro = ""
                 venc_atual = doc_atual.get("data_vencimento", "")
                 if venc_atual:
@@ -948,7 +893,6 @@ async def main(page: ft.Page):
                         venc_futuro = f"{d_v:02d}/{m_v:02d}/{a_v}"
                     except: pass
                 
-                # Joga a conta clonada pro futuro, já como PENDENTE!
                 db.collection("gastos").add({
                     "token_familia": doc_atual.get("token_familia"),
                     "descricao": doc_atual.get("descricao"),
@@ -957,12 +901,12 @@ async def main(page: ft.Page):
                     "forma_pagamento": doc_atual.get("forma_pagamento"),
                     "cartao_usado": doc_atual.get("cartao_usado"),
                     "quem_pagou": doc_atual.get("quem_pagou"),
-                    "data": hoje_str, # Data que o clone nasceu
-                    "mes_ano": mes_ano_futuro, # 👈 Viagem no tempo!
+                    "data": hoje_str, 
+                    "mes_ano": mes_ano_futuro, 
                     "data_registro": firestore.SERVER_TIMESTAMP,
                     "status": "pendente",
                     "data_vencimento": venc_futuro,
-                    "recorrente": True # Passa o DNA da recorrência pra frente!
+                    "recorrente": True 
                 })
             
             popup_pagamento.open = False
@@ -997,10 +941,7 @@ async def main(page: ft.Page):
             popup_pagamento.open = True
             page.update()
         
-        # =======================================================
-        # ✏️ SISTEMA DE EDIÇÃO DE GASTOS (O "U" DO CRUD)
-        # =======================================================
-        id_gasto_editar = [None] # Guarda o ID da conta que estamos mexendo
+        id_gasto_editar = [None] 
 
         edit_desc = ft.TextField(label="Descrição", border_radius=10, color="black", bgcolor="white")
         edit_valor = ft.TextField(label="Valor (R$)", keyboard_type=ft.KeyboardType.NUMBER, border_radius=10, color="black", bgcolor="white")
@@ -1013,7 +954,6 @@ async def main(page: ft.Page):
             if not edit_desc.value or not edit_valor.value: return
             try:
                 novo_valor = float(edit_valor.value.replace(',', '.'))
-                # Atualiza SÓ o que foi editado lá no Firebase
                 db.collection("gastos").document(id_gasto_editar[0]).update({
                     "descricao": edit_desc.value.strip(),
                     "valor": novo_valor
@@ -1021,7 +961,7 @@ async def main(page: ft.Page):
                 popup_editar.open = False
                 page.snack_bar = ft.SnackBar(ft.Text("✅ Gasto atualizado com sucesso!"), bgcolor="green")
                 page.snack_bar.open = True
-                carregar_dados() # Recarrega a tela para mostrar o valor novo
+                carregar_dados() 
                 page.update()
             except Exception as erro:
                 page.snack_bar = ft.SnackBar(ft.Text(f"Erro ao editar: {erro}"), bgcolor="red")
@@ -1043,15 +983,13 @@ async def main(page: ft.Page):
         )
         page.overlay.append(popup_editar)
 
-        # O Gatilho que preenche os dados e abre a tela
         def abrir_edicao(doc_id, desc_atual, valor_atual):
             id_gasto_editar[0] = doc_id
             edit_desc.value = desc_atual
-            edit_valor.value = str(valor_atual).replace('.', ',') # Volta a vírgula pro BR ler
+            edit_valor.value = str(valor_atual).replace('.', ',') 
             popup_editar.open = True
             page.update()
 
-        # --- FUNÇÃO PRINCIPAL CARREGAR DADOS ---
         def carregar_dados():
             lista_gastos_atual.controls.clear()
             lista_historico_meses.controls.clear()
@@ -1112,7 +1050,6 @@ async def main(page: ft.Page):
                     for reg in historico_depositos:
                         ui_historico.controls.append(ft.Text(f"📥 R$ {reg['valor']:.2f} guardados no dia {reg['data']}", size=11, color="grey"))
                 
-                # Substitua o cartao_meta antigo por este:
                 cartao_meta = criar_cartao_premium(
                     ft.Column([
                         ft.Row([
@@ -1155,10 +1092,7 @@ async def main(page: ft.Page):
                     pagas = max(0, min(pagas, total_p))
                     faltam = total_p - pagas
                     
-                    # --- 🛑 NOVO: A TRAVA DO FUTURO ---
                     inicia_no_futuro = False
-                    # Se o mês de início for maior que o mês atual (meses_passados < 0)
-                    # OU se for o mês atual mas ainda não chegou o dia 20:
                     if meses_passados < 0 or (meses_passados == 0 and hoje.day < 20):
                         inicia_no_futuro = True
 
@@ -1167,25 +1101,21 @@ async def main(page: ft.Page):
                     faltam = 0
                     inicia_no_futuro = False
 
-                # --- 🧠 LÓGICA DE EXIBIÇÃO INTELIGENTE ---
                 if total_p > 0 and faltam <= 0:
                     status_txt = "Quitado! 🎉"
                     cor_status = ft.Colors.GREEN
                 elif inicia_no_futuro:
-                    # Se começa no futuro, avisa na tela, mas NÃO SOMA o desconto no salário!
                     status_txt = f"Começa em: {inicio_p} ⏳"
                     cor_status = ft.Colors.BLUE
                 elif total_p > 0:
                     status_txt = f"Pagas: {pagas} | Faltam: {faltam}"
                     cor_status = ft.Colors.ORANGE
-                    # Só debita do salário se já estiver ativo!
                     total_desconto_consig += valor_parcela_consig
                     descontos_por_usuario[dono_consig] = descontos_por_usuario.get(dono_consig, 0.0) + valor_parcela_consig
                 else:
                     status_txt = "Configuração incompleta"
                     cor_status = ft.Colors.RED
 
-                # Substitua o item_consig antigo por este:
                 item_consig = criar_cartao_premium(
                     ft.Row([
                         ft.Column([ft.Text(f"👤 {dono_consig}", weight=ft.FontWeight.BOLD), ft.Text(f"Parcela: R$ {valor_parcela_consig:.2f}"), ft.Text(status_txt, color=cor_status)], expand=True),
@@ -1202,19 +1132,15 @@ async def main(page: ft.Page):
             docs_rendas = db.collection("rendas").where("token_familia", "==", usuario_token).stream()
             renda_total_familiar = 0.0
             total_pendente_geral = 0.0 
-            total_pago_geral = 0.0 # <--- AQUI NASCE A VARIÁVEL DE GASTOS PAGOS
+            total_pago_geral = 0.0 
             textos_detalhe = []
 
-            # ... (dentro de carregar_dados)
             for doc in docs_rendas:
                 dono_renda = doc.id
                 valor_renda = doc.to_dict().get("valor", 0.0)
                 desconto_dele = descontos_por_usuario.get(dono_renda, 0.0)
 
-                # --- 🔥 A MATEMÁTICA DO LÍQUIDO AQUI ---
                 liquido = valor_renda - desconto_dele
-                
-                # A renda familiar AGORA É O LÍQUIDO (já descontando o consignado)!
                 renda_total_familiar += liquido
                 
                 if desconto_dele > 0:
@@ -1229,7 +1155,7 @@ async def main(page: ft.Page):
 
             todos_docs = db.collection("gastos").where("token_familia", "==", usuario_token).order_by("data_registro", direction=firestore.Query.DESCENDING).stream()
             gastos_por_mes = {}
-            detalhes_por_categoria = {} # <--- ADICIONE ESTA LINHA!
+            detalhes_por_categoria = {} 
 
             hoje_data = datetime.date.today()
             dia_hoje = hoje_data.day
@@ -1250,19 +1176,14 @@ async def main(page: ft.Page):
                     if mes_ano_reg == mes_ano_atual or (mes_ano_reg == str_mes_passado and dia_hoje <= 10):
                         total_pendente_geral += v_num
                 elif status == "pago" or status == "Pago":
-                    # Somamos o dinheiro que JÁ SAIU DO BOLSO neste mês!
                     if mes_ano_reg == mes_ano_atual:
                         total_pago_geral += v_num
 
                 gastos_por_mes[mes_ano_reg] = gastos_por_mes.get(mes_ano_reg, 0.0) + v_num
 
-                # ==========================================
-                # 🧠 O RADAR INTELIGENTE (MODO INBOX ZERO)
-                # ==========================================
                 mostrar_na_home = False
                 texto_vencimento = ""
 
-                # Regra 1: SOMA no gráfico se for deste mês, mas NÃO MOSTRA O CARTÃO automaticamente!
                 if mes_ano_reg == mes_ano_atual:
                     total_despesas_mes_atual += v_num
                     cat = dado.get("categoria", "Outros")
@@ -1278,18 +1199,12 @@ async def main(page: ft.Page):
                     nome_exibicao = f"{desc} ({info_extra})" if info_extra else desc
                     detalhes_por_categoria[cat].append({"nome": nome_exibicao, "valor": v_num})
 
-                # Regra 2: SÓ MOSTRA NA TELA INICIAL SE ESTIVER PENDENTE! 
                 if status == "pendente":
                     mostrar_na_home = True 
                     
-                    # Se for de outro mês, bota o aviso vermelho pra você saber!
                     if mes_ano_reg != mes_ano_atual:
                         texto_vencimento = f" ⚠️ (Mês: {mes_ano_reg})"
 
-                # ==========================================      
-                # OBS: Se não for deste mês e já estiver "pago", o mostrar_na_home continua False 
-                # e a conta vai sumir da tela inicial e ficar guardada só na aba "Meses"!
-                # ==========================================
                 if mostrar_na_home:
                     vencimento_str = dado.get("data_vencimento", "")
                     alerta_vencimento = ""
@@ -1309,9 +1224,11 @@ async def main(page: ft.Page):
                             elif dias_restantes == 0:
                                 alerta_vencimento = f"🚨 VENCE HOJE!"
                                 cor_alerta = ft.Colors.RED
+                                notificar_fixo("🚨 VENCE HOJE!", f"A conta '{desc}' de R$ {v_num:.2f} vence hoje!", ft.Colors.RED_800)
                             else:
                                 alerta_vencimento = f"💀 ATRASADO HÁ {abs(dias_restantes)} DIAS!"
                                 cor_alerta = ft.Colors.RED_900
+                                notificar_fixo("💀 Conta Atrasada!", f"A conta '{desc}' de R$ {v_num:.2f} está atrasada!", ft.Colors.RED_900)
                         except: pass
 
                     coluna_texto_cartao = ft.Column([
@@ -1330,41 +1247,35 @@ async def main(page: ft.Page):
                         texto_data = f" em {data_pag}" if data_pag else ""
                         texto_banco = f" ({banco_usado})" if banco_usado else ""
                         
-                        # 1. A direita fica curtinha e direta!
                         controles_acao = ft.Text(f"✅ Pago{texto_data}", color=ft.Colors.GREEN, weight=ft.FontWeight.BOLD, size=13, text_align=ft.TextAlign.RIGHT)
                         
-                        # 2. Injetamos a informação do banco na coluna da esquerda (que sabe quebrar linha!)
                         coluna_texto_cartao.controls.append(
                             ft.Text(f"💳 via {metodo_usado}{texto_banco}", color=ft.Colors.GREEN_700, size=11, weight=ft.FontWeight.BOLD)
                         )
                     else:
-                        # 👇 Pegamos a descrição real direto do dicionário aqui! 👇
                         desc_real = dado.get("descricao", "")
                         
                         controles_acao = ft.Row([
                             ft.IconButton(icon=ft.Icons.CHECK_CIRCLE_OUTLINE, icon_color="green", tooltip="Pagar Conta", on_click=lambda e, id=doc_id: abrir_popup_pagamento(id)),
                             
-                            # Agora passamos o desc_real para o botão! ✏️
                             ft.IconButton(icon=ft.Icons.EDIT_OUTLINED, icon_color="blue", tooltip="Editar", on_click=lambda e, id=doc_id, d=desc_real, v=v_num: abrir_edicao(id, d, v)),
                             
                             ft.IconButton(icon=ft.Icons.DELETE, icon_color="red", tooltip="Excluir", on_click=lambda e, id=doc_id: apagar_gasto(id))
                         ])
                     
-                    # --- 🖃 CARIMBO DO HISTÓRICO GRAVADO AQUI (PAGAMENTO RÁPIDO) 🖃 ---
                     def criar_evento_pagar(id_doc):
                         def acao_pagar(e):
                             from datetime import datetime
                             hoje_str = datetime.now().strftime("%d/%m/%Y")
                             db.collection("gastos").document(id_doc).update({
                                 "status": "pago",
-                                "data_pagamento": hoje_str # <--- SALVA A DATA EXATA!
+                                "data_pagamento": hoje_str 
                             })
                             page.snack_bar = ft.SnackBar(ft.Text(f"✅ Conta paga com sucesso a {hoje_str}!"))
                             page.snack_bar.open = True
                             carregar_dados()
                             page.update()
                         return acao_pagar
-                        # -----------------------------------------------------------------
 
                     cartao = ft.Card(content=ft.Container(content=ft.Row([
                         coluna_texto_cartao, 
@@ -1372,9 +1283,6 @@ async def main(page: ft.Page):
                     ]), padding=10))
                     lista_gastos_atual.controls.append(cartao)
 
-            # =========================================================
-            # 🧠 INFORMAÇÃO DO MÊS PASSADO (APENAS VISUAL, SEM SOMAR)
-            # =========================================================
             id_m_ant = str_mes_passado.replace("/", "_")
             doc_r_ant = db.collection("resumo").document(id_m_ant).get()
             renda_mes_passado = doc_r_ant.to_dict().get("renda", 0.0) if doc_r_ant.exists else 0.0
@@ -1385,7 +1293,6 @@ async def main(page: ft.Page):
             gasto_mes_passado = gastos_por_mes.get(str_mes_passado, 0.0)
             saldo_anterior = renda_mes_passado - gasto_mes_passado
             
-            # Atualiza apenas a string menor!
             if saldo_anterior >= 0:
                 texto_sobra_mes_anterior.value = f"Mês anterior: +R$ {saldo_anterior:.2f}"
                 texto_sobra_mes_anterior.color = ft.Colors.GREEN_700
@@ -1393,10 +1300,6 @@ async def main(page: ft.Page):
                 texto_sobra_mes_anterior.value = f"Dívida anterior: -R$ {abs(saldo_anterior):.2f}"
                 texto_sobra_mes_anterior.color = ft.Colors.RED_700
 
-            # =========================================================
-            # 🧮 A MATEMÁTICA VOLTA A SER PURA E À PROVA DE BALAS!
-            # =========================================================
-            # A renda_total_familiar já está líquida. O saldo é ela menos os gastos (pagos e pendentes)
             saldo = renda_total_familiar - total_pendente_geral - total_pago_geral
             
             texto_renda_total.value = f"R$ {renda_total_familiar:.2f}"
@@ -1408,65 +1311,50 @@ async def main(page: ft.Page):
             if total_despesas_mes_atual > 0:
                 legenda_grafico.controls.append(ft.Text("Onde seu dinheiro foi:", weight="bold", size=16))
                 
-                # 👇 AGORA USAMOS A FUNÇÃO NOVA AQUI 👇
                 for cat, valor_cat in gastos_por_categoria.items():
                     cor = cores_categorias.get(cat, "grey")
-                    lista_detalhes = detalhes_por_categoria.get(cat, []) # Pega os sub-itens
+                    lista_detalhes = detalhes_por_categoria.get(cat, []) 
                     
                     barra_interativa = criar_barra_categoria(cat, valor_cat, total_despesas_mes_atual, cor, lista_detalhes)
                     legenda_grafico.controls.append(barra_interativa)
             
-            # 👇 SUBSTITUA O QUE ESTIVER ABAIXO DO SEU 'FOR' POR ISTO AQUI 👇
                 legenda_grafico.visible = True
             else: 
                 legenda_grafico.visible = False
 
-            # =========================================================
-            # 📦 O GRANDE CAIXOTÃO AGRUPADO (CARTÕES + GRÁFICO)
-            # =========================================================
             painel_grafico.content = ft.Container(
                 padding=20,
                 border_radius=20,
-                bgcolor="#F6F8FD", # O mesmo fundo azul clarinho chique!
+                bgcolor="#F6F8FD", 
                 border=ft.border.all(1, "#E5E9F2"),
                 content=ft.Column([
-                    linha_cartao_financeiros, # 1. Os dois cartõezinhos entram no topo
-                    ft.Divider(height=15, color="transparent"), # 2. Espaço pra respirar
-                    legenda_grafico # 3. As barrinhas entram embaixo juntinhas!
+                    linha_cartao_financeiros, 
+                    ft.Divider(height=15, color="transparent"), 
+                    legenda_grafico 
                 ], spacing=0)
             )
             
-            # Tira a sombra do painel antigo e força ele a ficar sempre visível
             painel_grafico.elevation = 0 
             painel_grafico.visible = True 
 
-            # =========================================================
-            # 🎨 NOVA ABA DE MESES VISUAL (ESTILO PREMIUM)
-            # =========================================================
             for mes, soma_mes in gastos_por_mes.items():
                 id_m = mes.replace("/", "_")
                 d_r = db.collection("resumo").document(id_m).get()
                 r_m = d_r.to_dict().get("renda", 0.0) if d_r.exists else 0.0
                 
-                # Se não houver renda salva para o mês antigo, usamos a atual como base
                 if r_m == 0: r_m = renda_total_familiar 
                 
                 saldo_m = r_m - soma_mes
                 
-                # Lógica de Cores e Ícones baseada na saúde financeira
                 esta_positivo = saldo_m >= 0
                 cor_tema = ft.Colors.GREEN_ACCENT_700 if esta_positivo else ft.Colors.RED_ACCENT_400
                 cor_fundo_barra = ft.Colors.GREEN_50 if esta_positivo else ft.Colors.RED_50
                 icone_status = ft.Icons.CHECK_CIRCLE_ROUNDED if esta_positivo else ft.Icons.REPORT_GMAILERRORRED_ROUNDED
                 
-                # Cálculo do progresso (Gasto em relação à Renda)
-                # Se gastou mais que a renda, a barra fica cheia (1.0)
                 progresso_valor = min(1.0, soma_mes / r_m) if r_m > 0 else 1.0
 
-                # Montagem do Card com Stack para o Ícone Flutuante
                 card_mes_premium = ft.Container(
                     content=ft.Stack([
-                        # 1. O Corpo do Cartão
                         ft.Container(
                             padding=20,
                             border_radius=20,
@@ -1480,7 +1368,6 @@ async def main(page: ft.Page):
                                     ft.Text(f"Saldo: R$ {saldo_m:.2f}", color=cor_tema, size=13, weight="bold"),
                                 ], spacing=10),
                                 ft.Divider(height=10, color="transparent"),
-                                # A Barra de Progresso Estilizada
                                 ft.ProgressBar(
                                     value=progresso_valor,
                                     color=cor_tema,
@@ -1490,7 +1377,6 @@ async def main(page: ft.Page):
                                 )
                             ], spacing=5),
                         ),
-                        # 2. O Ícone de Status Flutuante (na borda direita)
                         ft.Container(
                             content=ft.Icon(icone_status, color=cor_tema, size=30),
                             alignment=ft.Alignment.CENTER,
@@ -1499,29 +1385,23 @@ async def main(page: ft.Page):
                             width=45,
                             height=45,
                             right=10,
-                            top=35, # Ajuste conforme a altura do card
+                            top=35, 
                             shadow=ft.BoxShadow(blur_radius=10, color=ft.Colors.with_opacity(0.1, "black"))
                         )
                     ]),
-                    # O clique para ver detalhes continua aqui!
                     on_click=lambda e, m=mes: ver_detalhes_mes(m),
                     margin=ft.margin.only(bottom=10)
                 )
                 
                 lista_historico_meses.controls.append(card_mes_premium)
 
-                # =========================================================
-            # 📈 MÓDULO PREMIUM: GRÁFICO DE EVOLUÇÃO AZUL
-            # =========================================================
             if gastos_por_mes:
-                # 1. Coloca os meses na ordem certa do tempo
                 def sort_key(mes_str):
                     if "/" in mes_str:
                         m, a = mes_str.split('/')
                         return int(a) * 12 + int(m)
                     return 0
                 
-                # Pega só os últimos 6 meses para o celular não ficar apertado
                 meses_ordenados = sorted(gastos_por_mes.keys(), key=sort_key)[-6:] 
                 
                 max_gasto = 0
@@ -1529,9 +1409,6 @@ async def main(page: ft.Page):
                     if gastos_por_mes[mes] > max_gasto:
                         max_gasto = gastos_por_mes[mes]
 
-                # --- BLOCO FLET_CHARTS COMENTADO PARA EVITAR CRASH NO FLET 0.82+ ---
-                # A biblioteca flet_charts usa decorators antigos incompatíveis com v0.82+. 
-                # Deixamos um aviso provisório no lugar do gráfico por enquanto.
                 grafico = ft.Container(
                     content=ft.Text("📊 Gráfico temporariamente indisponível na nova versão.", color=ft.Colors.GREY_500, weight="bold"),
                     alignment=ft.alignment.center,
@@ -1544,13 +1421,12 @@ async def main(page: ft.Page):
                             ft.Icon(ft.Icons.SHOW_CHART, color=ft.Colors.BLUE),
                             ft.Text("Evolução Mensal (Gastos)", weight="bold", size=16)
                         ]),
-                        ft.Container(content=grafico, height=150, padding=10) # Altura travada pro visual
+                        ft.Container(content=grafico, height=150, padding=10) 
                     ]), elevation=2
                 )
                 cartao_evolucao.visible = True
             else:
                 cartao_evolucao.visible = False
-
 
             docs_listas = db.collection("listas_compras").where("token_familia", "==", usuario_token).order_by("data_criacao", direction=firestore.Query.DESCENDING).stream()
             for doc in docs_listas:
@@ -1558,14 +1434,8 @@ async def main(page: ft.Page):
                 doc_id = doc.id
                 itens_str = "".join([f"\n  • {i['qtd']}x {i['nome']} (R$ {i.get('preco', 0):.2f})" for i in d.get("itens", [])])
   
-                # =========================================================
-                # 🛍️ DESIGN PREMIUM COM LISTAGEM DE ITENS (CORRIGIDO)
-                # =========================================================
-                # 1. Pegamos os dados detalhados que salvamos no Firebase
                 itens_lista = d.get('itens_detalhados', [])
                 
-                # 2. A "Fábrica" de itens: Criamos uma coluna vazia e enchemos com Rows
-                # 1. Transformamos os dados em uma tabela visual organizada
                 itens_lista = d.get('itens_detalhados') or d.get('itens') or []
                 coluna_itens_tabela = ft.Column(spacing=10)
                 
@@ -1580,7 +1450,6 @@ async def main(page: ft.Page):
                                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
                             )
                 
-                # 2. Montagem do Card com as peças nos lugares CERTOS
                 cartao_lista = ft.Container(
                     padding=25,
                     border_radius=30,
@@ -1588,7 +1457,6 @@ async def main(page: ft.Page):
                     shadow=ft.BoxShadow(blur_radius=20, color=ft.Colors.with_opacity(0.1, "black")),
                     margin=ft.margin.only(bottom=20),
                     content=ft.Column([
-                        # TOPO (Lugar 1)
                         ft.Row([
                             ft.Row([
                                 ft.Icon(ft.Icons.CALENDAR_MONTH_ROUNDED, color=ft.Colors.BLUE_600),
@@ -1600,10 +1468,8 @@ async def main(page: ft.Page):
                         ft.Text(f"Total previsto: R$ {d.get('total_previsto', 0):.2f}", color=ft.Colors.BLUE_700, weight="bold"),
                         ft.Divider(height=20),
 
-                        # CONTEÚDO (Lugar 2 - Onde os itens aparecem ORGANIZADOS)
                         ft.Container(content=coluna_itens_tabela, padding=ft.padding.only(bottom=20)),
 
-                        # BASE (Lugar 3 - O Botão no final de tudo)
                         ft.Container(
                             content=ft.Row([
                                 ft.Icon(ft.Icons.CHECK_CIRCLE_OUTLINE_ROUNDED, color="white"),
@@ -1617,7 +1483,6 @@ async def main(page: ft.Page):
                     ])
                 )
 
-                # 4. Adiciona o cartão pronto na tela
                 lista_de_listas_salvas.controls.append(cartao_lista)
 
             page.update()
@@ -1637,27 +1502,21 @@ async def main(page: ft.Page):
                 page.snack_bar.open = True
                 page.update()
 
-        # ====================================================================
-        # 🚀 O MOTOR DE SALVAR DADOS (ONDE A MÁQUINA DO TEMPO ACONTECE) 🚀
-        # ====================================================================
         def adicionar_gasto_clique(e):
             if not descricao_input.value or not valor_input.value: return
             try:
                 v_total = float(valor_input.value.replace(',', '.'))
                 
-                # Pega as parcelas (Se der erro de digitação, assume 1)
                 try: qtd_parcelas = int(input_parcelas.value)
                 except: qtd_parcelas = 1
                 if qtd_parcelas < 1: qtd_parcelas = 1
                 
-                # A mágica da divisão:
                 v_parcela = v_total / qtd_parcelas
                 
                 hoje = datetime.datetime.now()
                 mes_base = hoje.month
                 ano_base = hoje.year
 
-                # Regra 1: Mês passado
                 if checkbox_mes_passado.value == True:
                     mes_base -= 1
                     if mes_base < 1:
@@ -1665,31 +1524,24 @@ async def main(page: ft.Page):
 
                 forma_pag_selecionada = forma_pagamento_dropdown.value
                 
-                # Regra 2: Máquina do Tempo do Cartão de Crédito
                 if forma_pag_selecionada == "Cartão de Crédito" and checkbox_mes_passado.value == False:
                     mes_base += 1
                     if mes_base > 12:
                         mes_base = 1; ano_base += 1
 
-                # 🔥 A TRAVA DE STATUS 🔥
                 status_correto = "pendente" if forma_pag_selecionada == "Cartão de Crédito" else "pago"
-                if qtd_parcelas > 1: status_correto = "pendente" # Parcela futura sempre nasce pendente!
+                if qtd_parcelas > 1: status_correto = "pendente" 
 
-                # =======================================================
-                # 🚀 O LOOP DE CLONAGEM PARA O FUTURO 🚀
-                # =======================================================
                 for i in range(qtd_parcelas):
                     mes_alvo = mes_base + i
                     ano_alvo = ano_base
                     
-                    # Se o mês passar de 12 (Dezembro), ele vira o ano sozinho!
                     while mes_alvo > 12:
                         mes_alvo -= 12
                         ano_alvo += 1
                         
                     mes_ano_salvar = f"{mes_alvo:02d}/{ano_alvo}"
                     
-                    # Coloca a etiqueta (1/5) no nome se for parcelado
                     desc_salvar = descricao_input.value
                     if qtd_parcelas > 1:
                         desc_salvar = f"{descricao_input.value} ({i+1}/{qtd_parcelas})"
@@ -1703,31 +1555,27 @@ async def main(page: ft.Page):
                         "cartao_usado": dropdown_qual_cartao.value if dropdown_qual_cartao.value else "Não se aplica",
                         "quem_pagou": nome_usuario, 
                         "data": hoje.strftime("%d/%m/%Y"), 
-                        "mes_ano": mes_ano_salvar, # O mês que viajou no tempo!
+                        "mes_ano": mes_ano_salvar, 
                         "data_registro": firestore.SERVER_TIMESTAMP,
                         "status": status_correto,
                         "data_vencimento": input_vencimento.value ,
                         "recorrente": checkbox_recorrente.value
                     })
                 
-                # Limpa os campos após salvar o combo
                 input_vencimento.value = ""; descricao_input.value = ""; valor_input.value = ""
-                input_parcelas.value = "1" # Reseta para à vista
+                input_parcelas.value = "1" 
                 categoria_dropdown.value = None; forma_pagamento_dropdown.value = None; dropdown_qual_cartao.value = "Não se aplica"
                 checkbox_mes_passado.value = False
                 
                 page.snack_bar = ft.SnackBar(ft.Text(f"✅ Lançamento em {qtd_parcelas}x salvo com sucesso!"))
                 page.snack_bar.open = True
+
+                notificar_fixo("💳 Novo Gasto Lançado!", f"Despesa salva com sucesso no valor de R$ {v_total:.2f}.", ft.Colors.BLUE_900)
                 
                 carregar_dados()
             except Exception as err: 
                 print(f"Erro ao salvar: {err}")
 
-            
-        
-        # =========================================================
-        # 🧠 MEMÓRIA DE PREÇOS DO MERCADO (AGORA NO LUGAR CERTO!)
-        # =========================================================
         doc_precos = db.collection("mercado").document("precos_base").get()
         precos_conhecidos = doc_precos.to_dict() if doc_precos.exists else {}
 
@@ -1745,7 +1593,6 @@ async def main(page: ft.Page):
             preco_salvo = precos_conhecidos.get(n, 0.0) 
             itens_mercado.append({"nome": n, "qtd": 0, "preco": preco_salvo})
 
-        # 🔥 AS VARIÁVEIS LIVRES E VISÍVEIS PARA O APP INTEIRO! 🔥
         lista_ui_compras = ft.Column(scroll=ft.ScrollMode.AUTO)
         texto_total_compras = ft.Text("Total: R$ 0.00", size=22, weight="bold", color="green")
 
@@ -1781,7 +1628,6 @@ async def main(page: ft.Page):
             lista_ui_compras.controls.append(criar_linha_item(item))
 
         def resetar_formulario_compras():
-            # Zera APENAS a quantidade (qtd). O preço continua na memória!
             for i in itens_mercado: 
                 i["qtd"] = 0 
                 
@@ -1790,9 +1636,7 @@ async def main(page: ft.Page):
                 lista_ui_compras.controls.append(criar_linha_item(i))
                 
             recalcular_total_compras()
-            page.update() # Força a tela a atualizar na mesma hora
-
-        # ... (E logo aqui embaixo continua o seu def salvar_lista_sem_lancar(e):) ...
+            page.update()
 
         def salvar_lista_sem_lancar(e):
             itens_salvar = [{"nome": i["nome"], "qtd": i["qtd"], "preco": i["preco"]} for i in itens_mercado if i["qtd"] > 0]
@@ -1802,16 +1646,13 @@ async def main(page: ft.Page):
                 page.update()
                 return
                 
-            # --- 🧠 O APP APRENDE OS NOVOS PREÇOS AQUI ---
             novos_precos = {}
             for i in itens_mercado:
                 if i["preco"] > 0:
                     novos_precos[i["nome"]] = i["preco"]
             
             if novos_precos:
-                # O merge=True faz com que ele só atualize os preços novos, sem apagar os outros itens do banco!
                 db.collection("mercado").document("precos_base").set(novos_precos, merge=True)
-            # ----------------------------------------------
 
             db.collection("listas_compras").add({
                 "data_texto": datetime.date.today().strftime("%d/%m/%Y"), "data_criacao": firestore.SERVER_TIMESTAMP,
@@ -1820,13 +1661,16 @@ async def main(page: ft.Page):
             resetar_formulario_compras()
             page.snack_bar = ft.SnackBar(ft.Text("Sua lista foi salva na aba 'Listas' e os preços atualizados!"))
             page.snack_bar.open = True
+
+            notificar_fixo("🛒 Lista de Compras Salva!", "Sua lista está na aba 'Listas'.", ft.Colors.GREEN_800)
+
             carregar_dados()
             page.navigation_bar.selected_index = 2 
             mudar_tab(None)
 
         botao_salvar_lista = ft.ElevatedButton("Salvar Lista Para Comprar Depois", on_click=salvar_lista_sem_lancar, bgcolor="blue", color="white", width=300)
 
-        texto_alerta_financeiro = ft.Text("", color=ft.Colors.RED_700, weight=ft.FontWeight.BOLD, expand=True) # <-- expand aqui!
+        texto_alerta_financeiro = ft.Text("", color=ft.Colors.RED_700, weight=ft.FontWeight.BOLD, expand=True)
         cartao_alerta_financeiro = ft.Card(content=ft.Container(content=ft.Row([ft.Icon(ft.icons.Icons.WARNING_AMBER, color=ft.Colors.RED_700), texto_alerta_financeiro]), padding=10, bgcolor=ft.Colors.RED_50), visible=False)
         def formatar_mes_ano_meta(e):
             numeros = "".join(filter(str.isdigit, e.control.value))
@@ -1863,9 +1707,12 @@ async def main(page: ft.Page):
                 carregar_dados()
                 page.snack_bar = ft.SnackBar(ft.Text("Consignado salvo na nuvem!"))
                 page.snack_bar.open = True
+
+                notificar_fixo("🏦 Empréstimo Salvo!", f"Empréstimo registrado com sucesso.", ft.Colors.ORANGE_900)
+
                 page.update()
             except: pass
-        # 👇 COLE ISTO ANTES DO mudar_tab 👇
+            
         cartao_evolucao = ft.Container(visible=False)
 
         def mudar_tab(e):
@@ -1875,11 +1722,8 @@ async def main(page: ft.Page):
             ecra_listas_salvas.visible = (index == 2) 
             ecra_historico.visible = (index == 3)   
             ecra_financeiro.visible = (index == 4)  
-            
-            # Apenas atualiza a tela na hora, sem chamar o banco de dados!
             page.update()
 
-        # Lá embaixo na definição do page.navigation_bar
         page.navigation_bar = ft.NavigationBar(
             destinations=[
                 ft.NavigationBarDestination(icon=ft.icons.Icons.HOME_OUTLINED, label="Início"),
@@ -1890,25 +1734,13 @@ async def main(page: ft.Page):
             ], on_change=mudar_tab 
         )
 
-        # =======================================================
-        # 🎨 MONTAGEM FINAL DA TELA INICIAL (DESIGN PREMIUM)
-        # =======================================================
-        
-        # 1. Empacotando o Salário
         botao_guardar_salario = ft.ElevatedButton("Guardar Salário", on_click=salvar_renda_clique, height=50, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), bgcolor="#F0F4FA", color=ft.Colors.BLUE_700))
         linha_salario = ft.Row([input_renda, botao_guardar_salario], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
 
-        # 2. O novo botão de Lançar
         botao_lancar_gasto = ft.ElevatedButton("Lançar Gasto", on_click=adicionar_gasto_clique, bgcolor=ft.Colors.BLUE_500, color=ft.Colors.WHITE, height=50, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)))
 
-
-        # =======================================================
-        # 📦 O FORMULÁRIO RETRÁTIL (EFEITO SANFONA)
-        # =======================================================
-        
-        # 1. Agrupamos todos os campos numa Coluna que NASCE ESCONDIDA
         coluna_campos_despesa = ft.Column([
-            ft.Divider(height=10, color="transparent"), # Espaço quando abre
+            ft.Divider(height=10, color="transparent"), 
             descricao_input, 
             valor_input, 
             linha_cat,           
@@ -1920,13 +1752,10 @@ async def main(page: ft.Page):
             ft.Row([ft.Container(content=botao_lancar_gasto, expand=True)])
         ], spacing=12, visible=False)
 
-        # 2. Criamos o ícone da setinha que vai girar
         icone_seta_despesa = ft.Icon(ft.Icons.KEYBOARD_ARROW_DOWN, color=ft.Colors.BLUE_GREY_900)
 
-        # 3. A Função que faz o botão de abrir e fechar funcionar
         def alternar_formulario_despesa(e):
             coluna_campos_despesa.visible = not coluna_campos_despesa.visible
-            # Se tiver visível, seta pra cima. Se não, seta pra baixo.
             icone_seta_despesa.name = ft.Icons.KEYBOARD_ARROW_UP if coluna_campos_despesa.visible else ft.Icons.KEYBOARD_ARROW_DOWN
             page.update()
 
@@ -1937,52 +1766,38 @@ async def main(page: ft.Page):
             border=ft.border.all(1, "#E5E9F2"),
             margin=ft.margin.only(bottom=20),
             content=ft.Column([
-                
-                # --- CABEÇALHO CLICÁVEL ---
                 ft.Container(
                     content=ft.Row([
                         ft.Row([
                             ft.Icon(ft.Icons.ACCOUNT_BALANCE_WALLET, color=ft.Colors.DEEP_PURPLE_400, size=30),
                             ft.Text("Adicionar Nova Despesa", size=18, weight="bold", color=ft.Colors.BLUE_GREY_900)
                         ], spacing=10),
-                        icone_seta_despesa # A setinha aqui na ponta direita!
+                        icone_seta_despesa 
                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                     on_click=alternar_formulario_despesa,
-                    ink=True, # Cria aquele efeito de "onda" ao clicar
+                    ink=True, 
                     padding=ft.padding.only(top=5, bottom=5)
                 ),
-                
-                # --- OS CAMPOS ESCONDIDOS ---
                 coluna_campos_despesa
-                
             ], spacing=0) 
         )
         
-        # =======================================================
-        # 📜 PAINEL DE LANÇAMENTOS RETRÁTIL
-        # =======================================================
-        
-        # 1. Faz a lista nascer escondida (como você pediu!)
         lista_gastos_atual.visible = False 
         
-        # 2. O ícone da setinha apontando para baixo
         icone_seta_lancamentos = ft.Icon(ft.Icons.KEYBOARD_ARROW_DOWN, color=ft.Colors.BLUE_GREY_900)
 
-        # 3. A função que abre e fecha a lista
         def alternar_lista_lancamentos(e):
             lista_gastos_atual.visible = not lista_gastos_atual.visible
             icone_seta_lancamentos.name = ft.Icons.KEYBOARD_ARROW_UP if lista_gastos_atual.visible else ft.Icons.KEYBOARD_ARROW_DOWN
             page.update()
 
-        # 4. O Caixotão Premium dos Lançamentos
         painel_lancamentos = ft.Container(
             padding=20,
             border_radius=15,
-            bgcolor="#F6F8FD", # Mesmo fundo azulzinho chique!
+            bgcolor="#F6F8FD", 
             border=ft.border.all(1, "#E5E9F2"),
             margin=ft.margin.only(bottom=20),
             content=ft.Column([
-                # --- CABEÇALHO CLICÁVEL ---
                 ft.Container(
                     content=ft.Row([
                         ft.Row([
@@ -1995,29 +1810,21 @@ async def main(page: ft.Page):
                     ink=True,
                     padding=ft.padding.only(top=5, bottom=5)
                 ),
-                
-                # --- A LISTA QUE APARECE E SOME ---
                 lista_gastos_atual
-                
             ], spacing=0)
         )
 
-        # 4. Jogando as caixas prontas na tela
         ecra_inicio.controls.extend([
-            # 👇 Trocamos aqui para mostrar o bloco com o Token junto com o botão de tema! 👇
             ft.Row([cabecalho_usuario, botao_tema], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, vertical_alignment=ft.CrossAxisAlignment.START), 
             cartao_pis, cartao_alerta_financeiro, painel_resumo, painel_grafico, ft.Divider(),
-            # ... resto do código
             
-            linha_salario, # Entra a linha do salário
+            linha_salario, 
             ft.Divider(height=20, color="transparent"),
             
-            formulario_despesas_premium, # Entra a caixa azul com os campos
-        
+            formulario_despesas_premium, 
 
-            painel_lancamentos, # <--- O NOVO PAINEL DE LANÇAMENTOS AQUI!
+            painel_lancamentos, 
             
-        
             lista_gastos_atual
         ])
 
@@ -2025,8 +1832,6 @@ async def main(page: ft.Page):
         input_nome_meta = ft.TextField(label="Qual o seu sonho?", expand=True, hint_text="Ex: Console Trimui", border_radius=10, prefix_icon=ft.Icons.STAR_BORDER)
         input_valor_meta = ft.TextField(label="Valor Total (R$)", expand=True, keyboard_type=ft.KeyboardType.NUMBER, border_radius=10, prefix_icon=ft.Icons.ATTACH_MONEY)
         input_data_meta = ft.TextField(label="Prazo (MM/AAAA)", expand=True, on_change=formatar_mes_ano_meta, max_length=7, border_radius=10, prefix_icon=ft.Icons.CALENDAR_MONTH)
-        
-        
         
         def criar_meta_clique(e):
             if not input_nome_meta.value or not input_valor_meta.value or not input_data_meta.value:
@@ -2069,7 +1874,7 @@ async def main(page: ft.Page):
                 ft.Divider(height=1, color=ft.Colors.GREY_200),
                 input_valor_consig, 
                 input_total_consig,
-                input_data_consig, # Um embaixo
+                input_data_consig, 
                 ft.ElevatedButton("Gravar na Nuvem", on_click=salvar_consignado, bgcolor=ft.Colors.BLUE, color=ft.Colors.WHITE, width=400, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)))
             ], spacing=15),
             elevation=2
@@ -2077,7 +1882,7 @@ async def main(page: ft.Page):
 
         conteudo_emprestimos = ft.Column([
             ft.Divider(color="transparent", height=10),
-            form_emprestimo_premium, # <--- Olha o formulário chic aqui!
+            form_emprestimo_premium, 
             ft.Divider(color="transparent", height=10),
             ft.Text("Empréstimos Ativos", size=18, weight="bold"), 
             lista_consignados_ui
@@ -2090,7 +1895,7 @@ async def main(page: ft.Page):
                     ft.Text("Criar Novo Sonho", weight=ft.FontWeight.BOLD, size=16)
                 ]),
                 ft.Divider(height=1, color=ft.Colors.GREY_200),
-                input_nome_meta, # Nome ocupa a linha toda
+                input_nome_meta, 
                 input_valor_meta, 
                 input_data_meta,
                 ft.ElevatedButton("Começar a Guardar", on_click=criar_meta_clique, bgcolor=ft.Colors.GREEN, color=ft.Colors.WHITE, width=400, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)))
@@ -2100,15 +1905,12 @@ async def main(page: ft.Page):
 
         conteudo_metas = ft.Column([
             ft.Divider(color="transparent", height=10),
-            form_metas_premium, # <--- Formulário de sonhos chic!
+            form_metas_premium, 
             ft.Divider(color="transparent", height=10),
             ft.Text("Nossos Cofrinhos", size=18, weight="bold"),
             lista_metas_ui
         ], scroll=ft.ScrollMode.AUTO, visible=False)
 
-        # Usamos ft.Colors.ON_SURFACE (que é preto no claro, e branco no escuro!)
-        # E ft.Colors.SURFACE_VARIANT (que é cinza claro no claro, e cinza escuro no escuro!)
-        
         botao_aba_emprestimos = ft.ElevatedButton("Empréstimos", icon=ft.Icons.ACCOUNT_BALANCE_WALLET, bgcolor="blue", color="white", expand=True, data="aba_emprestimos")
         botao_aba_metas = ft.ElevatedButton("Metas & Sonhos", icon=ft.Icons.STAR, bgcolor=ft.Colors.ON_SURFACE_VARIANT, color=ft.Colors.ON_SURFACE, expand=True, data="aba_metas")
 
@@ -2139,9 +1941,8 @@ async def main(page: ft.Page):
             ft.Text("Organize o passado (Dívidas) e guarde para o futuro (Sonhos).", size=14, color=ft.Colors.GREY),
             ft.Divider(),
             
-            # 👇 O NOSSO GRÁFICO PREMIUM ENTRA AQUI 👇
             cartao_evolucao,
-            ft.Divider(color="transparent", height=5), # Dá um espacinho
+            ft.Divider(color="transparent", height=5),
             
             linha_botoes,
             conteudo_emprestimos,
@@ -2177,9 +1978,8 @@ async def main(page: ft.Page):
 
         def atualizar_tela_com_aviso(mensagem):
             if mensagem == "novo_gasto":
-                carregar_dados() # Os números já vimos que atualizam!
+                carregar_dados() 
                 
-                # Criamos a notificação
                 aviso = ft.SnackBar(
                     content=ft.Row([
                         ft.Icon(ft.Icons.NOTIFICATIONS_ACTIVE, color="white"),
@@ -2191,33 +1991,22 @@ async def main(page: ft.Page):
                     duration=4000 
                 )
                 
-                # INJEÇÃO DIRETA NA TELA:
                 page.overlay.append(aviso)
                 aviso.open = True
                 page.update()
 
-        # 2. LIGANDO O RÁDIO: O Flet fica ouvindo nessa "frequência"
-        # page.pubsub.subscribe(atualizar_tela_com_aviso) # <--- COMENTADO NO FLET 0.82
-
-        # 3. O OLHEIRO DO FIREBASE (Trabalha em segundo plano)
         def radar_firebase_ativado(col_snapshot, changes, read_time):
-            # A gente ignora a primeira vez que o app abre, senão ele apita à toa
             if primeira_leitura_firebase[0]:
                 primeira_leitura_firebase[0] = False
                 return 
             
-            # Se passou da primeira leitura, significa que uma conta NOVA entrou ou foi paga!
-            # page.pubsub.send_all("novo_gasto") # <--- COMENTADO NO FLET 0.82
-            # Chamamos a atualização direto da forma correta para a nova versão:
             atualizar_tela_com_aviso("novo_gasto")
 
-        # 4. LIGANDO O OLHEIRO NAS SUAS DESPESAS
         db.collection("gastos").on_snapshot(radar_firebase_ativado)
         page.on_connect = lambda _: carregar_dados() 
         
-        # 🟢 A MÁGICA FINAL: APAGA O CARREGAMENTO E MOSTRA O APP!
         page.controls.clear()
-        page.vertical_alignment = ft.MainAxisAlignment.START # Volta o alinhamento ao normal
+        page.vertical_alignment = ft.MainAxisAlignment.START
         page.horizontal_alignment = ft.CrossAxisAlignment.START
         page.add(ecra_inicio, ecra_compras, ecra_listas_salvas, ecra_historico, ecra_financeiro)
         page.update()
@@ -2226,12 +2015,10 @@ async def main(page: ft.Page):
     # LÓGICA DE LOGIN INICIAL (COM CÃO DE GUARDA)
     # =======================================================
     if usuario_nome and usuario_nasc and usuario_5_anos is not None and usuario_token:
-        # Bate no Firebase antes de abrir a porta!
         doc_fam = db.collection("familias").document(usuario_token).get()
         status = doc_fam.to_dict().get("membros", {}).get(usuario_nome, "ativo") if doc_fam.exists else "ativo"
         
         if status == "bloqueado":
-            # 🚫 EXPULSO! Limpa o cofre e joga pro login
             page.shared_preferences.remove("usuario_token")
             page.controls.clear()
             page.scroll = None 
@@ -2242,7 +2029,6 @@ async def main(page: ft.Page):
             page.snack_bar.open = True
             page.update()
         else:
-            # 🟢 TUDO CERTO! Pode entrar.
             montar_interface_principal(usuario_nome, usuario_nasc, usuario_5_anos, usuario_token)
     else:
         page.controls.clear()
@@ -2252,7 +2038,6 @@ async def main(page: ft.Page):
         page.add(tela_login)
         page.update()
 
-# 👇 A ÚLTIMA LINHA FOI AJUSTADA PARA O SERVIDOR WEB NA AWS 👇
 ft.app(
     target=main, 
     assets_dir="assets",
