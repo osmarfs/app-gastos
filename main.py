@@ -4,7 +4,7 @@ import os
 import json
 import flet as ft
 import asyncio
-import flet_charts
+# import flet_charts # <--- DESATIVADO PARA COMPATIBILIDADE COM FLET 0.82+
 import datetime
 import firebase_admin
 from firebase_admin import credentials
@@ -101,7 +101,7 @@ async def main(page: ft.Page):
         page.window.icon = "icon.png"
     except:
         page.window_icon = "icon.png"
-   
+    
 
     # =======================================================
     # 🔐 2. LENDO A MEMÓRIA DO CELULAR 
@@ -1524,42 +1524,18 @@ async def main(page: ft.Page):
                 # Pega só os últimos 6 meses para o celular não ficar apertado
                 meses_ordenados = sorted(gastos_por_mes.keys(), key=sort_key)[-6:] 
                 
-                pontos_grafico = []
-                labels_eixo_x = []
                 max_gasto = 0
-                
-                # 2. Desenha cada ponto no gráfico
-                for i, mes in enumerate(meses_ordenados):
-                    valor = gastos_por_mes[mes]
-                    if valor > max_gasto: max_gasto = valor
-                    
-                    pontos_grafico.append(flet_charts.LineChartDataPoint(i, valor))
-                    
-                    # Pega só o número do mês (Ex: "03" tirado de "03/2026")
-                    txt_mes = mes.split("/")[0] 
-                    labels_eixo_x.append(
-                        flet_charts.ChartAxisLabel(value=i, label=ft.Text(txt_mes, size=12, weight="bold", color=ft.Colors.GREY_500))
-                    )
+                for mes in meses_ordenados:
+                    if gastos_por_mes[mes] > max_gasto:
+                        max_gasto = gastos_por_mes[mes]
 
-                # 3. A Linha Curvada Azul!
-                linha_gastos = flet_charts.LineChartData(
-                    points=pontos_grafico,
-                    stroke_width=4,
-                    color=ft.Colors.BLUE_500,  # Azul Premium
-                    curved=True,               # Efeito de onda suave!
-                    rounded_stroke_cap=True,
-                    point=True,                # Mostra as bolinhas em cada mês
-                )
-
-                # 4. Monta a caixa do gráfico
-                grafico = flet_charts.LineChart(
-                    data_series=[linha_gastos],
-                    border=ft.border.all(0, ft.Colors.TRANSPARENT),
-                    left_axis=flet_charts.ChartAxis(label_size=0), # Esconde o eixo Y para ficar limpo
-                    bottom_axis=flet_charts.ChartAxis(labels=labels_eixo_x, label_size=25),
-                    min_y=0,
-                    max_y=max_gasto * 1.2 if max_gasto > 0 else 100, # Dá um respiro pro teto
-                    expand=True,
+                # --- BLOCO FLET_CHARTS COMENTADO PARA EVITAR CRASH NO FLET 0.82+ ---
+                # A biblioteca flet_charts usa decorators antigos incompatíveis com v0.82+. 
+                # Deixamos um aviso provisório no lugar do gráfico por enquanto.
+                grafico = ft.Container(
+                    content=ft.Text("📊 Gráfico temporariamente indisponível na nova versão.", color=ft.Colors.GREY_500, weight="bold"),
+                    alignment=ft.alignment.center,
+                    height=150
                 )
 
                 cartao_evolucao.content = criar_cartao_premium(
@@ -2221,7 +2197,7 @@ async def main(page: ft.Page):
                 page.update()
 
         # 2. LIGANDO O RÁDIO: O Flet fica ouvindo nessa "frequência"
-        page.pubsub.subscribe(atualizar_tela_com_aviso)
+        # page.pubsub.subscribe(atualizar_tela_com_aviso) # <--- COMENTADO NO FLET 0.82
 
         # 3. O OLHEIRO DO FIREBASE (Trabalha em segundo plano)
         def radar_firebase_ativado(col_snapshot, changes, read_time):
@@ -2231,8 +2207,9 @@ async def main(page: ft.Page):
                 return 
             
             # Se passou da primeira leitura, significa que uma conta NOVA entrou ou foi paga!
-            # Manda o sinal pro rádio:
-            page.pubsub.send_all("novo_gasto")
+            # page.pubsub.send_all("novo_gasto") # <--- COMENTADO NO FLET 0.82
+            # Chamamos a atualização direto da forma correta para a nova versão:
+            atualizar_tela_com_aviso("novo_gasto")
 
         # 4. LIGANDO O OLHEIRO NAS SUAS DESPESAS
         db.collection("gastos").on_snapshot(radar_firebase_ativado)
@@ -2275,5 +2252,11 @@ async def main(page: ft.Page):
         page.add(tela_login)
         page.update()
 
-ft.app(target=main, assets_dir="assets")
-
+# 👇 A ÚLTIMA LINHA FOI AJUSTADA PARA O SERVIDOR WEB NA AWS 👇
+ft.app(
+    target=main, 
+    assets_dir="assets",
+    view=ft.AppView.WEB_BROWSER,
+    port=8000,
+    host="0.0.0.0"
+)
